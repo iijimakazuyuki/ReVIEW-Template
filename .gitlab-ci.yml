@@ -1,6 +1,7 @@
 image: vvakame/review:2.4
 
 build-pdf:
+  stage: build
   script: # build-in-docker.sh の終盤と同じもの
     - ./setup.sh
     - npm run pdf
@@ -9,6 +10,27 @@ build-pdf:
       - articles/ReVIEW-Template.pdf
   tags:
     - docker
+
+upload-pdf:
+  stage: deploy
+  image: node:10.6.0
+  script:
+    - |
+      if [ -z "$SLACK_API_TOKEN" -o -z "$SLACK_CONVERSATION_ID" ]; then
+        echo 'Skip uploading PDFs to Slack'
+        echo 'because $SLACK_API_TOKEN or $SLACK_CONVERSATION_ID is not set.'
+        exit 0
+      fi
+    - cp articles/*.pdf slack-uploader
+    - cd slack-uploader
+    - npm install
+    - node index.js
+  tags:
+    - docker
+
+stages:
+  - build
+  - deploy
 
 # 文法はこちらを参照してください
 # https://docs.gitlab.com/ce/ci/yaml/README.html
